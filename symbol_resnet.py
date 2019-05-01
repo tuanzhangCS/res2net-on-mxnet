@@ -42,7 +42,9 @@ def residual_unit(data, num_filter, stride, dim_match, name, bottle_neck=True, b
             convs.append(mx.sym.Convolution(data=inner_concat[0], num_filter=int(num_filter*0.25/segments), kernel=(3,3), stride=(1,1),
                                             pad=(1,1), no_bias=True, workspace=workspace, name=name + '_convs0'))
             for i in range(1, segments):
-                inner_concat.append(split[i] + convs[i])
+                inner_bn = mx.sym.BatchNorm(data=convs[i], fix_gamma=False, eps=2e-5, momentum=bn_mom, name=name+'_inner_bn'+str(i)) 
+                inner_act = mx.sym.Activation(data=inner_bn, act_type='relu', name=name+'_inner_relu'+str(i))
+                inner_concat.append(split[i] + inner_act)
                 convs.append(mx.sym.Convolution(data=inner_concat[i], num_filter=int(num_filter*0.25/segments), kernel=(3,3), stride=(1,1),
                                                 pad=(1,1), no_bias=True, workspace=workspace, name=name + '_convs'+str(i)))
             concat = mx.sym.concat(*convs, dim=1)
